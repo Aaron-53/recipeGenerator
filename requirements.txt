@@ -1,0 +1,7 @@
+# Required packages for embedding and Qdrant integration
+requests>=2.25.1
+sentence-transformers>=2.2.2
+torch>=2.0.0
+qdrant-client>=1.7.0
+tqdm>=4.64.0
+numpy>=1.21.0
