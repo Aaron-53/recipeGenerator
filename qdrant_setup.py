@@ -143,13 +143,20 @@ def check_docker():
 
 def check_qdrant_running():
     """Check if Qdrant is already running"""
+    print("Checking if Qdrant is running...")
     try:
-        response = requests.get(f"http://localhost:{QDRANT_PORT}/")
+        print(f"Trying to connect to Qdrant at http://localhost:{QDRANT_PORT}/")
+        response = requests.get(f"http://localhost:{QDRANT_PORT}/", timeout=5)
+        print(f"Received response from Qdrant: {response.status_code}")
         if response.status_code == 200:
             print("✅ Qdrant is already running!")
             return True
+    except (requests.exceptions.ReadTimeout, requests.exceptions.Timeout):
+        print("⏱️ Connection timeout - Qdrant is not responding")
     except requests.exceptions.ConnectionError:
-        pass
+        print("ℹ️ Qdrant is not running.")
+    except Exception as e:
+        print(f"❌ Error checking Qdrant status: {e}")
     return False
 
 
@@ -323,8 +330,10 @@ if __name__ == "__main__":
 
         if choice == "1":
             if not check_qdrant_running():
+                print("Starting Qdrant...")
                 start_qdrant()
             else:
+                print("Qdrant is already running. Showing status...")
                 show_status()
         elif choice == "2":
             stop_qdrant()

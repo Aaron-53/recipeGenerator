@@ -1,2 +1,3 @@
 RecipeNLG_dataset.csv
 rag_documents.json
+/qdrant_storage
