@@ -1,3 +1,4 @@
 RecipeNLG_dataset.csv
 rag_documents.json
+embedding_progress.json
 /qdrant_storage
