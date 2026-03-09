@@ -293,7 +293,7 @@ try:
         print("🧠 Generating embeddings...")
         embeddings = model.encode(
             texts,
-            batch_size=32,  # Reduced batch size for stability
+            batch_size=128,  # Reduced batch size for stability
             convert_to_numpy=True,
             normalize_embeddings=True,
             show_progress_bar=True,

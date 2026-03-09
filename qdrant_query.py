@@ -37,12 +37,19 @@ def search_recipes(query_text, limit=5):
             query_text, convert_to_numpy=True, normalize_embeddings=True
         ).tolist()
 
-        # Search in Qdrant
-        search_results = qdrant_client.search(
+        # Search in Qdrant using query_points
+        search_response = qdrant_client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=query_embedding,
+            query=query_embedding,
             limit=limit,
             with_payload=True,
+        )
+
+        # Extract points from response
+        search_results = (
+            search_response.points
+            if hasattr(search_response, "points")
+            else search_response
         )
 
         print(f"\nSearch results for: '{query_text}'")

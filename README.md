@@ -1,51 +1,180 @@
-# Recipe Vector Search System
+# Multi-Model Recipe Recommendation System
 
-A complete system for generating recipe embeddings and performing semantic search using Qdrant vector database.
+A sophisticated recipe recommendation system implementing a **Composite Indexing Strategy** with three distinct data views, user profiling, and intelligent learning capabilities.
 
-## 🚀 Quick Start Guide
+## 🏗️ System Architecture
 
-### Step 1: Create Conda Environment
+### 1. The Multi-Model Data Store
+A comprehensive three-layer architecture that goes beyond standard vector databases:
 
-```bash
-# Create a new empty conda environment
-conda create -n recipe-search python=3.10 -y
+#### **Vector Embedding Layer** 
+- High-dimensional representations capturing the "soul" of recipes
+- Powered by BGE (BAAI General Embedding) model
+- Stored in Qdrant vector database for efficient semantic similarity
 
-# Activate the environment
-conda activate recipe-search
+#### **Metadata Layer**
+- Structured, searchable fields for hard filtering
+- Allergies, ingredients, dietary tags, cuisine types, cooking times
+- Enables SQL-like "Safety Gate" filtering before AI processing
+
+#### **Social Graph Layer**
+- Comments, ratings, and popularity scoring
+- Linked by recipe_id for comprehensive social data
+- Calculates dynamic popularity scores to break ties
+
+### 2. The User Profile Engine
+The "Brain" that stays outside the Vector DB, tracking users across three dimensions:
+
+#### **Inventory Snapshot**
+- Real-time kitchen inventory with quantities
+- Automatic consumption tracking when recipes are made  
+- Ingredient freshness decay simulation
+
+#### **Constraint Profile** 
+- "Never" items (allergies) for safety filtering
+- "Always" items (dietary preferences)
+- Cooking time and difficulty preferences
+
+#### **Behavioral Vector**
+- Dynamic taste profile from 4+ star recipe ratings
+- Averages embeddings of liked recipes
+- Continuously refined with user interactions
+
+### 3. The 4-Step Retrieval Pipeline
+
+#### **Step A: Query Transformation**
+- LLM converts natural language → Structured Search Object
+- Extracts time constraints, ingredients, cuisine preferences
+- Generates query embedding for semantic matching
+
+#### **Step B: Hard Filtering (Safety Gate)**
+- Database-level allergen exclusion (100% safety guarantee)
+- Time, difficulty, and cuisine constraints
+- Applied before vector search for efficiency
+
+#### **Step C: Semantic Retrieval & Scoring**
+Comprehensive scoring formula with 5 weighted components:
+- **Similarity Score** (25%): Semantic match to query + user taste profile
+- **Inventory Match** (25%): Percentage of ingredients user owns
+- **Quality Score** (20%): Average rating from social data
+- **Popularity Score** (15%): Social engagement metrics
+- **Behavioral Match** (15%): Cosine similarity to user's taste vector
+
+#### **Step D: RAG "Chef" Generation**
+- Top 3 recipes with context sent to LLM
+- Generates explanations with ingredient analysis
+- Suggests substitutions for missing ingredients
+- Incorporates user comments and ratings
+
+### 4. The Feedback Loop System
+Continuous learning from every interaction:
+
+#### **Inventory Updates**
+- Automatic ingredient consumption when cooking
+- Freshness decay over time
+- Smart quantity tracking
+
+#### **Profile Learning**
+- 4+ star ratings strengthen taste profile
+- Recipe vectors averaged into behavioral embedding
+- Ingredient preferences detected from patterns
+
+#### **Social Updates**
+- New ratings affect recipe popularity scores
+- Comment sentiment influences recommendations  
+- Community learning benefits all users
+
+## 📊 Mathematical Foundation
+
+### Scoring Formula
+```
+Total Score = Σ(Component_i × Weight_i)
+
+Where:
+- Similarity: cosine(query_vector, recipe_vector) 
+- Inventory: |user_ingredients ∩ recipe_ingredients| / |recipe_ingredients|
+- Quality: (average_rating - 1) / 4 × confidence_factor
+- Popularity: f(ratings_count, comments_count, recent_activity)
+- Behavioral: cosine(user_taste_vector, recipe_vector)
 ```
 
-### Step 2: Install Dependencies
+### Learning Rate
+```
+New_Taste_Vector = (1-α) × Old_Vector + α × Recipe_Vector
+Where α = 0.1 (configurable learning rate)
+```
 
+## 🚀 Quick Start
+
+### Prerequisites
+1. **Python 3.8+**
+2. **Qdrant Vector Database** 
+   ```bash
+   # Start Qdrant (Docker)
+   docker run -p 6333:6333 qdrant/qdrant
+   ```
+
+### Installation
 ```bash
-# Install all required Python packages
+# Install dependencies 
 pip install -r requirements.txt
-```
 
-**Required packages:**
-
-- `requests>=2.25.1` - HTTP client
-- `sentence-transformers>=2.2.2` - Text embeddings
-- `torch>=2.0.0` - Deep learning framework
-- `qdrant-client>=1.7.0` - Vector database client
-- `tqdm>=4.64.0` - Progress bars
-- `numpy>=1.21.0` - Numerical computing
-
-### Step 3: Start Qdrant Database
-
-```bash
-# Start Qdrant using Docker
+# Setup Qdrant
 python qdrant_setup.py start
+
+# Process your recipe dataset
+python embedding.py  # Embeds recipes into vector database
 ```
 
-This will:
+### Usage
 
-- ✅ Check if Docker is installed
-- ✅ Start Qdrant container on port 6333
-- ✅ Create persistent storage directory: `qdrant_storage/`
-- ✅ Set up vector database
-- 🌐 Dashboard available at: http://localhost:6333/dashboard
+#### Interactive Mode
+```bash
+python main_application.py
+```
 
-### Step 4: Generate Embeddings
+#### Quick Demo  
+```bash
+python main_application.py demo
+```
+
+## 🎮 Interactive Commands
+
+### User Management
+```bash
+create_user <username>    # Create new account
+login <username>          # Login existing user
+logout                    # Logout current user
+```
+
+### Recipe Discovery
+```bash  
+search <query>           # "quick chicken dinner"
+rate <index> <stars>     # rate 1 4.5
+cook <index>             # Mark as cooked, updates inventory
+```
+
+### Profile Management
+```bash
+inventory               # Add ingredients with quantities
+allergy <allergen>      # Add allergen (nuts, dairy, etc.)
+insights               # View learning progress & recommendations
+```
+
+## 🎯 Business Logic Summary
+
+| Requirement | Architectural Component | Implementation |
+|-------------|------------------------|----------------|
+| **Allergies** | Metadata Filtering | Boolean exclusion at DB level |
+| **Inventory** | Post-Retrieval Scoring | Mathematical overlap calculation (A ∩ B) |  
+| **Taste/Vibe** | Vector Similarity | Cosine similarity between query + user vectors |
+| **User Profile** | Relational Database | SQLite with interaction history |
+| **Social Data** | Aggregation Layer | Comments → ratings → popularity scores |
+| **Learning** | Feedback Loop | Vector averaging + constraint updating |
+
+---
+
+*Built with ❤️ for food lovers who want AI that truly understands their taste*
 
 ```bash
 # Process recipes and create embeddings
