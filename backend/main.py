@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
-from routers import auth
+from routers import auth, inventory
 from configs import settings
 from configs.database import connect_to_mongo, close_mongo_connection
 
@@ -37,6 +37,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router)
+app.include_router(inventory.router)
 
 
 @app.get("/")
