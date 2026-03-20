@@ -10,7 +10,7 @@ tqdm>=4.64.0
 requests>=2.25.1
 
 # Database and Storage
-sqlite3  # Built-in with Python
+# sqlite3 is built-in with Python - no install needed
 
 # Data Science and Analysis
 scikit-learn>=1.1.0
@@ -23,7 +23,7 @@ python-dateutil>=2.8.0
 typing-extensions>=4.0.0
 
 # System and Path Operations
-pathlib  # Built-in with Python 3.4+
+# pathlib is built-in with Python 3.4+ - no install needed
 
 fastapi==0.110.0
 uvicorn[standard]==0.27.1
