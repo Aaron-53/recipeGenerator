@@ -140,19 +140,20 @@ Backend URLs:
 
 ## 9. Run the Frontend
 
-Open another terminal:
+Copy the example env and install dependencies:
 
 ```powershell
 cd D:\miniProj\frontend
+cp .env.example .env
 npm install
-npm start
+npm run dev
 ```
 
 Frontend URL:
 
-- `http://localhost:3000`
+- `http://localhost:5173` (Vite default) or the port shown in the terminal.
 
-The frontend is configured to call backend at `http://localhost:8000`.
+**Frontend environment:** Create `frontend/.env` (see `frontend/.env.example`). Set `VITE_API_URL=http://localhost:8000` so the app talks to the backend. If unset, it defaults to `http://localhost:8000`.
 
 ## 10. Suggested Startup Order
 
@@ -160,7 +161,7 @@ The frontend is configured to call backend at `http://localhost:8000`.
 2. Start Docker Desktop.
 3. Start Qdrant with `python qdrant_setup.py start` from `vector db`.
 4. Start backend (`uvicorn`).
-5. Start frontend (`npm start`).
+5. Start frontend (`npm run dev`).
 6. Start/use Ollama model if your flow needs LLM calls.
 
 ## 11. Stop Everything
@@ -176,3 +177,8 @@ python qdrant_setup.py stop
 
 4. Stop MongoDB (if running locally).
 5. Docker Desktop can be closed if not needed.
+
+## 12. Frontend Notes (Inventory)
+
+- **Add/Edit item form:** The inventory UI only uses **name**, **quantity**, and **unit**. Category and notes fields are not shown or used in the form.
+- **Category filters:** The inventory list does not include category filters; all items are listed.
