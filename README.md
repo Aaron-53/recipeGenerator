@@ -182,3 +182,17 @@ python qdrant_setup.py stop
 
 - **Add/Edit item form:** The inventory UI only uses **name**, **quantity**, and **unit**. Category and notes fields are not shown or used in the form.
 - **Category filters:** The inventory list does not include category filters; all items are listed.
+
+## 13. Common Fix: `cached_download` ImportError
+
+If you see this error while running backend/retrieval scripts:
+
+`ImportError: cannot import name 'cached_download' from 'huggingface_hub'`
+
+run this in your active environment:
+
+```powershell
+pip install -U "sentence-transformers>=2.7.0" "transformers>=4.41,<5" "huggingface-hub>=0.23,<1"
+```
+
+Then restart the backend server.
