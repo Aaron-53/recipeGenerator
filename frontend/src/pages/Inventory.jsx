@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import signupImage from '../assets/signup_bg.svg'
 import { FiPlus } from 'react-icons/fi'
 import { FaRegEdit } from 'react-icons/fa'
 import { IoArrowUp } from 'react-icons/io5'
-import { FiLogOut } from 'react-icons/fi'
+import Navbar from '../components/Navbar'
+import Loader from '../components/Loader'
 import IngredientDialog from '../components/IngredientDialog'
-import { useAuth } from '../context/AuthContext'
 import { inventoryAPI } from '../services/api'
 
 const Inventory = () => {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -94,39 +91,17 @@ const Inventory = () => {
     }
   }
 
-  const handleLogout = async () => {
-    await logout()
-    navigate('/', { replace: true })
-  }
-
   const handleQuickSubmit = (e) => {
     e?.preventDefault()
     setQuickInput('')
   }
 
   return (
-    <div className='fixed inset-0 overflow-x-hidden'>
-      <img
-        src={signupImage}
-        alt=""
-        className='h-full w-full min-h-full min-w-full object-cover object-center'
-        aria-hidden
-      />
-      <div className='absolute inset-0 z-10 flex items-center justify-end'>
-        <div className='w-full max-w-[650px] px-6 md:px-14 lg:px-16 lg:mr-8'>
-          <div className='flex items-center justify-between mb-6'>
-            <h1 className='text-[#F2CEC2] text-xl md:text-3xl font-medium'>
-              What&apos;s in your kitchen?
-            </h1>
-            <button
-              type='button'
-              onClick={handleLogout}
-              className='inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F6C7B7]/90 text-[#5C6E43] font-medium text-sm hover:opacity-90 cursor-pointer'
-              aria-label='Log out'
-            >
-              <FiLogOut size={16} /> Logout
-            </button>
-          </div>
+    <div className='min-h-screen flex flex-col bg-[#5b6d44]'>
+      <Navbar />
+      <div className='relative overflow-x-hidden'>
+        <div className='relative z-10 flex min-h-[calc(100vh-12rem)] items-center justify-center'>
+          <div className='w-full max-w-[700px] px-6 md:px-14 lg:px-16'>
 
           {error && (
             <p className='mb-4 text-red-200 text-sm bg-red-900/40 px-4 py-2 rounded-lg'>
@@ -135,7 +110,7 @@ const Inventory = () => {
           )}
 
           {loading ? (
-            <p className='text-[#F2CEC2]'>Loading inventory...</p>
+            <Loader className="min-h-[min(60vh,28rem)] py-0" />
           ) : (
             <>
               <div className='relative rounded-xl bg-[#F6E7C8] overflow-hidden shadow-sm flex flex-col h-[320px]'>
@@ -230,6 +205,7 @@ const Inventory = () => {
               </form>
             </>
           )}
+          </div>
         </div>
       </div>
 

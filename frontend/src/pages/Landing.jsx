@@ -5,7 +5,6 @@ import landingImage from '../assets/landing.svg'
 const Landing = () => {
   return (
     <div className='overflow-x-hidden bg-[#5C6E43]'>
-      {/* Top section: full-bg image with left copy overlaid */}
       <section className='relative overflow-hidden'>
         <img
           src={landingImage}
@@ -40,7 +39,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Dark green section with explanatory text */}
       <section className=' text-[#F5F0E8] px-8 md:px-12 lg:px-16 -mt-[20rem] mb-12 flex items-center justify-center'>
         <p className='max-w-2xl text-left text-base md:text-lg leading-relaxed'>
           Not sure what to cook with what you have at home? We can help you find

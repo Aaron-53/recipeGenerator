@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import PrivateRoute from './components/PrivateRoute'
 import Landing from './pages/Landing'
@@ -6,6 +6,7 @@ import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
 import Inventory from './pages/Inventory'
 import Home from './pages/Home'
+import Chat from './pages/Chat'
 import AuthCallback from './pages/AuthCallback'
 
 function App() {
@@ -25,7 +26,23 @@ function App() {
               </PrivateRoute>
             }
           />
-          <Route path="/home" element={<Home />} />
+          <Route
+            path="/generate-recipe"
+            element={
+              <PrivateRoute>
+                <Chat />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/home"
+            element={
+              <PrivateRoute>
+                <Home />
+              </PrivateRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

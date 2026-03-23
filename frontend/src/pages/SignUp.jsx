@@ -4,6 +4,7 @@ import { FiEye, FiEyeOff } from 'react-icons/fi'
 import signupImage from '../assets/signup_bg.svg'
 import { FaGoogle } from 'react-icons/fa'
 import { useAuth } from '../context/AuthContext'
+import Loader, { LoaderSpinner } from '../components/Loader'
 
 const SignUp = () => {
   const [username, setUsername] = useState('')
@@ -17,7 +18,7 @@ const SignUp = () => {
   const navigate = useNavigate()
   const { register, loginWithGoogle, isAuthenticated, loading: authLoading } = useAuth()
 
-  if (authLoading) return null
+  if (authLoading) return <Loader fullscreen />
   if (isAuthenticated) return <Navigate to="/inventory" replace />
 
   const handleSubmit = async (e) => {
@@ -156,9 +157,18 @@ const SignUp = () => {
             <button
               type='submit'
               disabled={loading || password !== repeatPassword}
-              className='w-full max-w-[150px] mx-auto py-3 rounded-full font-semibold text-[#5C6E43] bg-gradient-to-r from-[#F3BD8C] to-[#E69695] hover:opacity-95 transition-opacity cursor-pointer mt-2 disabled:opacity-70'
+              className='w-full max-w-[150px] mx-auto py-3 rounded-full font-semibold text-[#5C6E43] bg-gradient-to-r from-[#F3BD8C] to-[#E69695] hover:opacity-95 transition-opacity cursor-pointer mt-2 disabled:opacity-70 inline-flex items-center justify-center gap-2 min-h-[48px]'
             >
-              {loading ? 'Signing up...' : 'Sign Up'}
+              {loading ? (
+                <>
+                  <span className="inline-flex scale-[0.72] origin-center" aria-hidden>
+                    <LoaderSpinner size="xs" color="#1a1a1a" />
+                  </span>
+                  <span>Signing up…</span>
+                </>
+              ) : (
+                'Sign Up'
+              )}
             </button>
           </form>
           <p className='text-[#F2CEC2] text-sm mt-2 text-center mx-auto mb-24 md:mb-0'>

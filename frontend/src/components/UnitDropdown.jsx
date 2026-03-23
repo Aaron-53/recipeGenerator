@@ -2,107 +2,73 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { FiChevronDown } from 'react-icons/fi'
 
 const UNITS_BY_CATEGORY = [
+
   {
-    category: 'Count',
+    category: "Mass",
     units: [
-      'no.',
-      'piece',
-      'pcs',
-      'slice',
-      'clove',
-      'head',
-      'bunch',
-      'stalk',
-      'sprig',
-      'leaf',
-      'cube',
-      'pinch',
-      'dash',
-      'whole',
-      'half',
-      'dozen',
-      'count',
-      'item',
-      'serving',
-    ],
+      "mg",
+      "g",
+      "kg"
+    ]
   },
+
   {
-    category: 'Volume (Liquid)',
+    category: "Volume",
     units: [
-      'ml',
-      'mL',
-      'L',
-      'liter',
-      'litre',
-      'cl',
-      'dl',
-      'fl oz',
-      'fluid ounce',
-      'cup',
-      'tablespoon',
-      'tbsp',
-      'teaspoon',
-      'tsp',
-      'pint',
-      'pt',
-      'quart',
-      'qt',
-      'gallon',
-      'gal',
-      'drop',
-      'dash',
-      'shot',
-      'jigger',
-    ],
+      "ml",
+      "l",
+      "teaspoon",
+      "tablespoon",
+      "cup"
+    ]
   },
+
   {
-    category: 'Mass / Weight',
+    category: "Count",
     units: [
-      'g',
-      'gram',
-      'grams',
-      'kg',
-      'kilogram',
-      'mg',
-      'oz',
-      'ounce',
-      'lb',
-      'pound',
-      'lbs',
-    ],
+      "piece",
+      "slice",
+      "clove",
+      "bunch",
+      "stalk",
+      "sprig",
+      "leaf",
+      "cube",
+      "dozen"
+    ]
   },
+
   {
-    category: 'Volume (Dry / Cooking)',
+    category: "Small Measures",
     units: [
-      'cup',
-      'tablespoon',
-      'tbsp',
-      'teaspoon',
-      'tsp',
-      'heaped tbsp',
-      'level tbsp',
-      'scant cup',
-    ],
+      "pinch",
+      "drop"
+    ]
   },
+
   {
-    category: 'Container / Other',
+    category: "Containers",
     units: [
-      'can',
-      'jar',
-      'packet',
-      'bag',
-      'box',
-      'bottle',
-      'strip',
-      'sheet',
-      'pack',
-      'carton',
-      'tin',
-      'sachet',
-      'envelope',
-    ],
+      "packet",
+      "bag",
+      "box",
+      "jar",
+      "bottle",
+      "carton",
+      "tin",
+      "sachet"
+    ]
   },
-]
+
+  {
+    category: "Cooking Portions",
+    units: [
+      "handful",
+      "scoop"
+    ]
+  }
+
+];
 
 const allUnits = UNITS_BY_CATEGORY.flatMap(({ units }) => units)
 
