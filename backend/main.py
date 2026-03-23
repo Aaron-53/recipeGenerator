@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 from routers import auth, inventory, recipes
+from rating.router import router as rating_router
+from rating import ensure_collection
 from configs import settings
 from configs.database import connect_to_mongo, close_mongo_connection
 
@@ -12,6 +14,7 @@ async def lifespan(app: FastAPI):
     """Lifespan events for startup and shutdown"""
     # Startup
     await connect_to_mongo()
+    ensure_collection()
     recipes.initialize_recipe_retrieval()
     yield
     # Shutdown
@@ -39,6 +42,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router)
 app.include_router(inventory.router)
+app.include_router(rating_router)
 app.include_router(recipes.router)
 
 
