@@ -4,6 +4,11 @@ ollama_chat.py
 Terminal chatbot that calls the FastAPI backend.
 The backend handles Ollama + Qdrant + personalisation.
 
+Usage:
+  python ollama_chat.py [--token TOKEN]
+
+If --token is not provided, it will login with hardcoded credentials.
+
 Commands:
   /exit   — quit
   /new    — clear history
@@ -13,11 +18,28 @@ Commands:
 import json
 import urllib.request
 from pathlib import Path
+import argparse
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
 API_BASE = "http://localhost:8000"
 HISTORY = Path(__file__).with_name("chat_history.json")
+
+def verify_token(token: str) -> bool:
+    req = urllib.request.Request(
+        f"{API_BASE}/auth/verify-token",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        },
+        method="GET",
+    )
+    try:
+        response = json.loads(urllib.request.urlopen(req).read())
+        return response.get("valid", False)
+    except Exception:
+        return False
+
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
@@ -69,83 +91,95 @@ def submit_rating(token: str, recipe_text: str, rating: int, review: str):
 
 # ── Main loop ─────────────────────────────────────────────────────────────────
 
-print("=== Recipe Chatbot ===")
-username = input("Username: ").strip()
-password = input("Password: ").strip()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Recipe Chatbot")
+    parser.add_argument("--token", type=str, help="User access token")
+    args = parser.parse_args()
 
-try:
-    token = login(username, password)
-    print(f"✅ Logged in as {username}\n")
-except Exception as e:
-    print(f"❌ Login failed: {e}")
-    exit(1)
+    print("=== Recipe Chatbot ===")
 
-messages = json.loads(HISTORY.read_text(encoding="utf-8")) if HISTORY.exists() else []
-last_recipe = None
+    if args.token:
+        token = args.token
+        if not verify_token(token):
+            print("❌ Invalid token provided")
+            exit(1)
+        print("✅ Using provided token\n")
+    else:
+        username = "elena"
+        password = "Test1234!"
+        try:
+            token = login(username, password)
+            print(f"✅ Logged in as {username}\n")
+        except Exception as e:
+            print(f"❌ Login failed: {e}")
+            exit(1)
 
-print("Commands: /exit | /new | /rate")
-print("-" * 40)
+    messages = json.loads(HISTORY.read_text(encoding="utf-8")) if HISTORY.exists() else []
+    last_recipe = None
 
-while True:
-    text = input("\nYou: ").strip()
+    print("Commands: /exit | /new | /rate")
+    print("-" * 40)
 
-    if not text:
-        continue
+    while True:
+        text = input("\nYou: ").strip()
 
-    if text == "/exit":
-        print("Bye!")
-        break
-
-    if text == "/new":
-        messages = []
-        last_recipe = None
-        HISTORY.write_text("[]", encoding="utf-8")
-        print("✅ Started a new chat.")
-        continue
-
-    if text == "/rate":
-        if not last_recipe:
-            print("⚠️  No recipe to rate yet. Ask for a recipe first.")
+        if not text:
             continue
 
-        print("\nLast recipe snippet:")
-        print(f"  {last_recipe[:80]}...")
+        if text == "/exit":
+            print("Bye!")
+            break
 
-        while True:
-            r = input("Rating (1-5): ").strip()
-            if r.isdigit() and 1 <= int(r) <= 5:
-                rating = int(r)
-                break
-            print("Please enter a number between 1 and 5.")
+        if text == "/new":
+            messages = []
+            last_recipe = None
+            HISTORY.write_text("[]", encoding="utf-8")
+            print("✅ Started a new chat.")
+            continue
 
-        review = input("Review (or press Enter to skip): ").strip()
+        if text == "/rate":
+            if not last_recipe:
+                print("⚠️  No recipe to rate yet. Ask for a recipe first.")
+                continue
 
+            print("\nLast recipe snippet:")
+            print(f"  {last_recipe[:80]}...")
+
+            while True:
+                r = input("Rating (1-5): ").strip()
+                if r.isdigit() and 1 <= int(r) <= 5:
+                    rating = int(r)
+                    break
+                print("Please enter a number between 1 and 5.")
+
+            review = input("Review (or press Enter to skip): ").strip()
+
+            try:
+                result = submit_rating(token, last_recipe, rating, review)
+                print(f"✅ {result['message']}")
+                print("📊 Rating saved to Qdrant. Next recipe will use this.")
+            except Exception as e:
+                print(f"❌ Failed to save rating: {e}")
+            continue
+
+        # Send to FastAPI
+        print("⏳ Thinking...")
         try:
-            result = submit_rating(token, last_recipe, rating, review)
-            print(f"✅ {result['message']}")
-            print("📊 Rating saved to Qdrant. Next recipe will use this.")
+            response = send_message(token, text, messages)
         except Exception as e:
-            print(f"❌ Failed to save rating: {e}")
-        continue
+            print(f"❌ Error: {e}")
+            continue
 
-    # Send to FastAPI
-    print("⏳ Thinking...")
-    try:
-        response = send_message(token, text, messages)
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        continue
+        reply = response["reply"]
+        is_recipe = response["is_recipe"]
 
-    reply = response["reply"]
-    is_recipe = response["is_recipe"]
+        print(f"\nAssistant: {reply}")
 
-    print(f"\nAssistant: {reply}")
+        if is_recipe:
+            last_recipe = reply
+            print("\n💡 Type /rate to rate this recipe")
 
-    if is_recipe:
-        last_recipe = reply
-        print("\n💡 Type /rate to rate this recipe")
-
-    # Update history
-    messages.append({"role": "user", "content": text})
-    messages.append({"role": "assistant", "content": reply})
-    HISTORY.write_text(json.dumps(messages, indent=2), encoding="utf-8")
+        # Update history
+        messages.append({"role": "user", "content": text})
+        messages.append({"role": "assistant", "content": reply})
+        HISTORY.write_text(json.dumps(messages, indent=2), encoding="utf-8")

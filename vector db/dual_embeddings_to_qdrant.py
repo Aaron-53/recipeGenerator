@@ -104,7 +104,7 @@ def batch_iter(items: List[Dict[str, Any]], batch_size: int) -> Iterable[List[Di
 
 def main() -> int:
     # Hardcoded configuration
-    INPUT_FILE = ".\\test3.json"
+    INPUT_FILE = "/Users/elena/MINI/ratings/recipeGenerator/vector db/test3.json"
     COLLECTION_NAME = "recipe_embeddings_dual"
     QDRANT_HOST = "localhost"
     QDRANT_PORT = 6333
