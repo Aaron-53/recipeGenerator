@@ -1,14 +1,18 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from datetime import datetime
 from typing import List
+import json
 from schemas.inventory import (
     InventoryItemCreate,
     InventoryItemUpdate,
     InventoryItemResponse,
+    InventoryQuickParseRequest,
+    ParsedInventoryDelta,
 )
 from utils.auth_utils import get_current_user_from_token
 from configs.database import get_collection
 from bson import ObjectId
+from services.inventory_parser import parse_inventory_input_with_llm, _normalize_unit, CONVERSION_MAP
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
 
@@ -21,6 +25,167 @@ def validate_object_id(item_id: str) -> ObjectId:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid item ID format"
         )
+
+
+def _convert_count_to_unit(count: float, from_unit: str | None, to_unit: str | None) -> float:
+    """Convert quantity from one unit to another when possible.
+
+    Uses parser CONVERSION_MAP normalization and adds common metric bridges.
+    Returns original count if conversion is not known.
+    """
+    if count is None:
+        return 0.0
+
+    from_u = _normalize_unit(from_unit)
+    to_u = _normalize_unit(to_unit)
+
+    if not from_u or not to_u or from_u == to_u:
+        return float(count)
+
+    # Common metric bridges used heavily in inventory updates.
+    bridge_factors: dict[tuple[str, str], float] = {
+        ("kg", "g"): 1000.0,
+        ("g", "kg"): 0.001,
+        ("l", "ml"): 1000.0,
+        ("ml", "l"): 0.001,
+    }
+    factor = bridge_factors.get((from_u, to_u))
+    if factor is not None:
+        return float(count) * factor
+
+    # Convert through map target units if available.
+    from_meta = CONVERSION_MAP.get(from_u)
+    to_meta = CONVERSION_MAP.get(to_u)
+    if from_meta and to_meta:
+        from_target, from_factor = from_meta
+        to_target, to_factor = to_meta
+        if from_target == to_target and to_factor:
+            # source -> shared target -> requested unit
+            in_target = float(count) * float(from_factor)
+            return in_target / float(to_factor)
+
+    return float(count)
+
+
+@router.post("/parse-input", response_model=List[ParsedInventoryDelta])
+async def parse_inventory_quick_input(
+    body: InventoryQuickParseRequest,
+    current_user: dict = Depends(get_current_user_from_token),
+):
+    """Parse freeform inventory text and apply changes to inventory."""
+
+    user_id = current_user["user_id"]
+
+    try:
+        inventory_collection = await get_collection("inventory")
+        # Fetch current inventory for context
+        cursor = inventory_collection.find({"user_id": user_id})
+        current_inventory = await cursor.to_list(length=None)
+
+        # Convert to format expected by parser
+        inventory_for_llm = [
+            {
+                "name": item.get("name"),
+                "quantity": item.get("quantity"),
+                "unit": item.get("unit"),
+            }
+            for item in current_inventory
+        ]
+
+        parsed = parse_inventory_input_with_llm(body.text.strip(), inventory_for_llm)
+    except Exception as exc:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"[inventory.parse-input] ERROR: {error_trace}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to parse inventory: {str(exc)}",
+        ) from exc
+
+    print(
+        "[inventory.parse-input] user="
+        f"{user_id} parsed_deltas="
+        f"{json.dumps(parsed, ensure_ascii=True)}"
+    )
+
+    # Apply changes to inventory
+    for delta in parsed:
+        item_name = delta.get("item", "").strip().lower()
+        count = float(delta.get("count", 0))
+        unit = delta.get("unit")
+        op = delta.get("op", "+")
+
+        # Normalize unit
+        if unit:
+            unit = _normalize_unit(unit)
+
+        # Find matching item in current inventory (case-insensitive)
+        matching_item = None
+        for inv_item in current_inventory:
+            if inv_item.get("name", "").lower() == item_name:
+                matching_item = inv_item
+                break
+
+        if op == "+":
+            # Add operation
+            if matching_item:
+                existing_unit = matching_item.get("unit")
+                adjusted_count = _convert_count_to_unit(count, unit, existing_unit)
+                # Update existing item: add to quantity
+                new_quantity = float(matching_item.get("quantity", 0)) + adjusted_count
+                await inventory_collection.update_one(
+                    {"_id": matching_item["_id"]},
+                    {
+                        "$set": {
+                            "quantity": new_quantity,
+                            "updated_at": datetime.utcnow(),
+                        }
+                    },
+                )
+                matching_item["quantity"] = new_quantity
+            else:
+                # Create new item
+                new_item = {
+                    "name": delta.get("item"),
+                    "quantity": count,
+                    "unit": unit or "",
+                    "category": None,
+                    "notes": None,
+                    "user_id": user_id,
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow(),
+                }
+                await inventory_collection.insert_one(new_item)
+                current_inventory.append(new_item)
+
+        elif op == "-":
+            # Remove operation (decrease quantity)
+            if matching_item:
+                existing_unit = matching_item.get("unit")
+                adjusted_count = _convert_count_to_unit(count, unit, existing_unit)
+                current_qty = float(matching_item.get("quantity", 0))
+                new_quantity = max(0, current_qty - adjusted_count)
+
+                if new_quantity <= 0:
+                    # Delete if quantity becomes 0 or less
+                    await inventory_collection.delete_one({"_id": matching_item["_id"]})
+                    current_inventory = [
+                        x for x in current_inventory if x.get("_id") != matching_item.get("_id")
+                    ]
+                else:
+                    # Update quantity
+                    await inventory_collection.update_one(
+                        {"_id": matching_item["_id"]},
+                        {
+                            "$set": {
+                                "quantity": new_quantity,
+                                "updated_at": datetime.utcnow(),
+                            }
+                        },
+                    )
+                    matching_item["quantity"] = new_quantity
+
+    return parsed
 
 
 @router.post(

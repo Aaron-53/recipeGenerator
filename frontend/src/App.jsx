@@ -35,7 +35,7 @@ function App() {
             }
           />
           <Route
-            path="/home"
+            path="/browse-recipes"
             element={
               <PrivateRoute>
                 <Home />

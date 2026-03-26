@@ -15,11 +15,11 @@ Install these tools first:
 
 Recommended downloads:
 
-- Anaconda: https://www.anaconda.com/download
-- Docker Desktop: https://www.docker.com/products/docker-desktop/
-- Ollama: https://ollama.com/download
-- Node.js: https://nodejs.org/
-- MongoDB Community: https://www.mongodb.com/try/download/community
+- Anaconda: [https://www.anaconda.com/download](https://www.anaconda.com/download)
+- Docker Desktop: [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
+- Ollama: [https://ollama.com/download](https://ollama.com/download)
+- Node.js: [https://nodejs.org/](https://nodejs.org/)
+- MongoDB Community: [https://www.mongodb.com/try/download/community](https://www.mongodb.com/try/download/community)
 
 ## 2. Clone and Open Project
 
@@ -83,19 +83,19 @@ docker --version
 
 ## 6. Start and Stop Qdrant (Using Provided Script)
 
-Use the script inside the `vector db` folder.
+Use the script inside the `vector-db` folder.
 
 Start Qdrant:
 
 ```powershell
-cd "D:\miniProj\vector db"
+cd "D:\miniProj\vector-db"
 python qdrant_setup.py start
 ```
 
 Stop Qdrant:
 
 ```powershell
-cd "D:\miniProj\vector db"
+cd "D:\miniProj\vector-db"
 python qdrant_setup.py stop
 ```
 
@@ -103,7 +103,7 @@ Notes:
 
 - This script starts a Docker container named `qdrant_local`.
 - Qdrant API runs on `http://localhost:6333`.
-- Data persists in `vector db/qdrant_storage`.
+- Data persists in `vector-db/qdrant_storage`.
 
 ## 7. Ollama Setup
 
@@ -159,7 +159,7 @@ Frontend URL:
 
 1. Start MongoDB.
 2. Start Docker Desktop.
-3. Start Qdrant with `python qdrant_setup.py start` from `vector db`.
+3. Start Qdrant with `python qdrant_setup.py start` from `vector-db`.
 4. Start backend (`uvicorn`).
 5. Start frontend (`npm run dev`).
 6. Start/use Ollama model if your flow needs LLM calls.
@@ -171,12 +171,12 @@ Frontend URL:
 3. Stop Qdrant:
 
 ```powershell
-cd "D:\miniProj\vector db"
+cd "D:\miniProj\vector-db"
 python qdrant_setup.py stop
 ```
 
-4. Stop MongoDB (if running locally).
-5. Docker Desktop can be closed if not needed.
+1. Stop MongoDB (if running locally).
+2. Docker Desktop can be closed if not needed.
 
 ## 12. Frontend Notes (Inventory)
 

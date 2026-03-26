@@ -109,15 +109,11 @@ def save_rating(
 # ── Fetch relevant ratings ────────────────────────────────────────────────────
 
 def get_relevant_ratings(query: str, user_id: str, top_k: int = 3) -> str:
-    """
-    Embed the query and find the most similar past recipes this user rated.
-    Returns a formatted string to inject into the system prompt.
-    """
     vector = embed(query)
 
-    results = client.search(
+    results = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=vector,
+        query=vector,
         limit=top_k,
         query_filter=Filter(
             must=[
@@ -130,11 +126,13 @@ def get_relevant_ratings(query: str, user_id: str, top_k: int = 3) -> str:
         with_payload=True,
     )
 
-    if not results:
+    points = results.points if hasattr(results, "points") else results[0]
+
+    if not points:
         return ""
 
     lines = []
-    for r in results:
+    for r in points:
         p = r.payload
         snippet = p.get("recipe_text", "")[:80].replace("\n", " ")
         rating = p.get("rating", "?")

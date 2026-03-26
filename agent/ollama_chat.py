@@ -12,7 +12,12 @@ If --token is not provided, it will login with hardcoded credentials.
 Commands:
   /exit   — quit
   /new    — clear history
-  /rate   — rate the last recipe
+  /rate   — rate the last recipe (manual; uses your Mongo inventory via the API)
+
+Flow:
+  Ask for a recipe → refine in follow-up messages → when finished say
+  "done", "that's all", or "please rate" → the app asks for 1–5 → reply with
+  a single digit or use /rate.
 """
 
 import json
@@ -106,7 +111,7 @@ if __name__ == "__main__":
         print("✅ Using provided token\n")
     else:
         username = "elena"
-        password = "Test1234!"
+        password = "Password1!"
         try:
             token = login(username, password)
             print(f"✅ Logged in as {username}\n")
@@ -118,6 +123,7 @@ if __name__ == "__main__":
     last_recipe = None
 
     print("Commands: /exit | /new | /rate")
+    print("(After a recipe: keep chatting to refine; say 'done' to rate.)")
     print("-" * 40)
 
     while True:
@@ -172,12 +178,20 @@ if __name__ == "__main__":
 
         reply = response["reply"]
         is_recipe = response["is_recipe"]
+        trigger_rating = response.get("trigger_rating_ui", False)
+        rating_saved = response.get("rating_saved", False)
 
         print(f"\nAssistant: {reply}")
 
-        if is_recipe:
+        if is_recipe or ("recipe_name" in reply and "ingredients" in reply):
             last_recipe = reply
-            print("\n💡 Type /rate to rate this recipe")
+
+        if rating_saved:
+            print("\n📊 Rating saved — future recipes will use this feedback.")
+        elif trigger_rating:
+            print("\n💡 Reply with a single digit 1–5 to score the last recipe.")
+        elif is_recipe:
+            print("\n💡 Ask for changes, or say 'done' / 'that's all' when you want to rate.")
 
         # Update history
         messages.append({"role": "user", "content": text})

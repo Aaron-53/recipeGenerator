@@ -27,6 +27,7 @@ const UNITS_BY_CATEGORY = [
     category: "Count",
     units: [
       "piece",
+      "nos.",
       "slice",
       "clove",
       "bunch",
@@ -67,10 +68,13 @@ const UNITS_BY_CATEGORY = [
       "scoop"
     ]
   }
-
 ];
 
-const allUnits = UNITS_BY_CATEGORY.flatMap(({ units }) => units)
+export function unitForApi(unit) {
+  const t = String(unit ?? '').trim()
+  if (t === 'nos.') return 'piece'
+  return t
+}
 
 const filterByQuery = (query) => {
   const q = query.trim().toLowerCase()
@@ -95,10 +99,17 @@ const UnitDropdown = ({ value, onChange, placeholder = 'e.g. no, ml, g', id, cla
 
   useLayoutEffect(() => {
     if (!isOpen || !containerRef.current) return
-    const rect = containerRef.current.getBoundingClientRect()
-    const spaceBelow = window.innerHeight - rect.bottom
-    const spaceAbove = rect.top
-    setOpenUpward(spaceBelow < DROPDOWN_MAX_HEIGHT + SPACE_BUFFER && spaceAbove > spaceBelow)
+    const el = containerRef.current
+    const id = requestAnimationFrame(() => {
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      const spaceAbove = rect.top
+      setOpenUpward(
+        spaceBelow < DROPDOWN_MAX_HEIGHT + SPACE_BUFFER && spaceAbove > spaceBelow
+      )
+    })
+    return () => cancelAnimationFrame(id)
   }, [isOpen])
 
   useEffect(() => {
@@ -222,4 +233,3 @@ const UnitDropdown = ({ value, onChange, placeholder = 'e.g. no, ml, g', id, cla
 }
 
 export default UnitDropdown
-export { UNITS_BY_CATEGORY, allUnits }

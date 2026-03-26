@@ -1,12 +1,17 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
-from routers import auth, inventory, recipes
+from routers import auth, inventory, recipes, chat_sessions
 from rating.router import router as rating_router
 from rating import ensure_collection
 from configs import settings
 from configs.database import connect_to_mongo, close_mongo_connection
+
+# Align cookie session with long JWTs (OAuth state); override via env if needed.
+_SESSION_MAX_AGE = int(os.getenv("SESSION_MAX_AGE_SECONDS", str(7 * 24 * 3600)))
 
 
 @asynccontextmanager
@@ -27,7 +32,7 @@ app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION, lifespan=li
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SECRET_KEY,
-    max_age=3600,  # 1 hour session timeout
+    max_age=_SESSION_MAX_AGE,
 )
 
 # Configure CORS
@@ -44,6 +49,7 @@ app.include_router(auth.router)
 app.include_router(inventory.router)
 app.include_router(rating_router)
 app.include_router(recipes.router)
+app.include_router(chat_sessions.router)
 
 
 @app.get("/")

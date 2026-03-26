@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react'
 import { authAPI } from '../services/api'
+import { formatApiError } from '../utils/formatApiError'
 
 const AuthContext = createContext(null)
 
@@ -49,7 +50,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userResponse.data)
       return { success: true }
     } catch (err) {
-      const message = err.response?.data?.detail || 'Login failed'
+      const message = formatApiError(err, 'Login failed')
       setError(message)
       return { success: false, error: message }
     }
@@ -61,7 +62,7 @@ export const AuthProvider = ({ children }) => {
       await authAPI.register(username, password)
       return await login(username, password)
     } catch (err) {
-      const message = err.response?.data?.detail || 'Registration failed'
+      const message = formatApiError(err, 'Registration failed')
       setError(message)
       return { success: false, error: message }
     }
@@ -90,7 +91,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userResponse.data)
       return { success: true }
     } catch (err) {
-      const message = err.response?.data?.detail || 'Google login failed'
+      const message = formatApiError(err, 'Google login failed')
       setError(message)
       return { success: false, error: message }
     }

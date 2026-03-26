@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react'
-import signupImage from '../assets/signup_bg.svg'
 import { FiPlus } from 'react-icons/fi'
 import { FaRegEdit } from 'react-icons/fa'
 import { IoArrowUp } from 'react-icons/io5'
 import Navbar from '../components/Navbar'
-import Loader from '../components/Loader'
+import ErrorBanner from '../components/ErrorBanner'
+import Loader, { LoaderSpinner } from '../components/Loader'
 import IngredientDialog from '../components/IngredientDialog'
 import { inventoryAPI } from '../services/api'
+import { formatApiError } from '../utils/formatApiError'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
+import inventoryBg from '../assets/inventory.svg'
 
 const Inventory = () => {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [quickInput, setQuickInput] = useState('')
+  const [quickSubmitting, setQuickSubmitting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
 
@@ -22,7 +26,7 @@ const Inventory = () => {
       const res = await inventoryAPI.getAllItems()
       setItems(res.data || [])
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load inventory')
+      setError(formatApiError(err, 'Failed to load inventory'))
       setItems([])
     } finally {
       setLoading(false)
@@ -32,6 +36,8 @@ const Inventory = () => {
   useEffect(() => {
     loadItems()
   }, [])
+
+  useBodyScrollLock(quickSubmitting)
 
   const openAddDialog = () => {
     setEditingItem(null)
@@ -74,68 +80,94 @@ const Inventory = () => {
       closeDialog()
       await loadItems()
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Failed to save'
+      const msg = formatApiError(err, 'Failed to save')
       setError(msg)
     }
   }
 
   const handleDeleteIngredient = async () => {
     if (!editingItem) return
-    if (!window.confirm('Delete this item?')) return
     try {
       await inventoryAPI.deleteItem(editingItem.item_id)
       closeDialog()
       await loadItems()
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to delete')
+      setError(formatApiError(err, 'Failed to delete'))
     }
   }
 
-  const handleQuickSubmit = (e) => {
+  const handleQuickSubmit = async (e) => {
     e?.preventDefault()
-    setQuickInput('')
+    if (quickSubmitting) return
+    const text = quickInput.trim()
+    if (!text) return
+
+    try {
+      setQuickSubmitting(true)
+      setError('')
+      const res = await inventoryAPI.parseQuickInput(text)
+      if (res?.status === 200) {
+        setQuickInput('')
+        await loadItems()
+      }
+    } catch (err) {
+      setError(formatApiError(err, 'Failed to parse inventory input'))
+    } finally {
+      setQuickSubmitting(false)
+    }
   }
 
   return (
-    <div className='min-h-screen flex flex-col bg-[#5b6d44]'>
-      <Navbar />
-      <div className='relative overflow-x-hidden'>
-        <div className='relative z-10 flex min-h-[calc(100vh-12rem)] items-center justify-center'>
-          <div className='w-full max-w-[700px] px-6 md:px-14 lg:px-16'>
-
-          {error && (
-            <p className='mb-4 text-red-200 text-sm bg-red-900/40 px-4 py-2 rounded-lg'>
-              {error}
-            </p>
-          )}
+    <div className='relative flex min-h-screen flex-col bg-[#5b6d44]'>
+      <div
+        aria-hidden
+        className='pointer-events-none absolute inset-0 z-0 bg-[#5b6d44] bg-cover bg-center bg-no-repeat'
+        style={{ backgroundImage: `url(${inventoryBg})` }}
+      />
+      <div className='relative z-10'>
+        <Navbar />
+      </div>
+      <main className='relative z-10 flex min-h-0 flex-1 flex-col'>
+        <div className='relative flex min-h-[calc(100vh-12rem)] flex-1 flex-col overflow-x-hidden'>
+          <div className='flex flex-1 items-center justify-center'>
+            <div className='w-full w-[calc(100vw-16rem)] px-6 md:px-24 lg:px-52'>
+            <h1 className='lg:hidden px-2 pt-2 py-12 text-2xl font-semibold tracking-tight text-[#F2CEC2] sm:text-3xl'>
+              Edit Inventory
+            </h1>
+          <ErrorBanner
+            message={error}
+            onDismiss={() => setError('')}
+            variant="auth"
+            className="mb-4 px-4"
+          />
 
           {loading ? (
             <Loader className="min-h-[min(60vh,28rem)] py-0" />
           ) : (
             <>
-              <div className='relative rounded-xl bg-[#F6E7C8] overflow-hidden shadow-sm flex flex-col h-[320px]'>
+              <div className='relative rounded-xl bg-[#F6E7C8] overflow-hidden shadow-sm flex flex-col h-[calc(100vh-16rem)]'>
                 <table className='w-full border-collapse table-fixed shrink-0'>
                   <thead>
                     <tr className='bg-[#F6C7B7]'>
-                      <th className='text-left text-[#5C6E43] font-semibold py-3 px-4 text-lg w-[45%]'>
+                      <th className='text-left text-[#5C6E43] font-semibold py-3 px-4 text-base md:text-lg w-[45%]'>
                         Ingredient
                       </th>
-                      <th className='text-center text-[#5C6E43] font-semibold py-3 px-4 text-lg w-[25%]'>
+                      <th className='text-center text-[#5C6E43] font-semibold py-3 px-4 text-base md:text-lg w-[25%]'>
                         Quantity
                       </th>
-                      <th className='text-right text-[#5C6E43] font-semibold py-3 px-4 text-lg w-[30%]'>
+                      <th className='text-right text-[#5C6E43] font-semibold py-3 px-4 text-base md:text-lg w-[30%]'>
                         Unit
                       </th>
                     </tr>
                   </thead>
                 </table>
-                <div className='inventory-rows-scroll overflow-auto min-h-0 flex-1'>
+                <div className='inventory-rows-scroll overflow-auto min-h-0 flex-1 pb-10'>
                   <table className='w-full border-collapse table-fixed'>
                     <tbody>
                       {items.length === 0 ? (
                         <tr>
                           <td colSpan={3} className='py-8 px-4 text-center text-[#4a4a4a] text-sm'>
-                            No items yet. Add your first ingredient below.
+                            No items yet. Add your inventory items now!
                           </td>
                         </tr>
                       ) : (
@@ -192,12 +224,14 @@ const Inventory = () => {
                   type='text'
                   value={quickInput}
                   onChange={(e) => setQuickInput(e.target.value)}
+                  disabled={quickSubmitting}
                   placeholder='Quick add (e.g. 2 eggs, 100g spinach)'
                   className='flex-1 px-4 py-2.5 bg-transparent text-[#4a4a4a] placeholder-[#4a4a4a]/60 focus:outline-none text-sm'
                 />
                 <button
                   type='submit'
-                  className='px-2.5 scale-70 -mr-2 rounded-full bg-[#e8c4c0]/80 text-black hover:bg-[#e8c4c0] transition-colors cursor-pointer'
+                  disabled={quickSubmitting}
+                  className='px-2.5 scale-70 -mr-2 rounded-full bg-[#e8c4c0]/80 text-black hover:bg-[#e8c4c0] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed'
                   aria-label='Add ingredients'
                 >
                   <IoArrowUp size={20} />
@@ -205,9 +239,21 @@ const Inventory = () => {
               </form>
             </>
           )}
+            </div>
           </div>
         </div>
-      </div>
+      </main>
+
+      {quickSubmitting && (
+        <div
+          className='fixed inset-0 z-[10056] flex items-center justify-center bg-black/55 backdrop-blur-[2px]'
+          role='status'
+          aria-live='polite'
+          aria-label='Updating inventory'
+        >
+          <LoaderSpinner size='lg' color='#F2CEC2' />
+        </div>
+      )}
 
       <IngredientDialog
         open={dialogOpen}

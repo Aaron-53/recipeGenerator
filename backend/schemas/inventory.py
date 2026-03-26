@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional
+from typing import Literal
 from datetime import datetime
 
 
@@ -41,3 +42,18 @@ class InventoryItemResponse(InventoryItemBase):
 
     class Config:
         from_attributes = True
+
+
+class InventoryQuickParseRequest(BaseModel):
+    """Freeform inventory command text from quick input."""
+
+    text: str = Field(..., min_length=1, max_length=1000)
+
+
+class ParsedInventoryDelta(BaseModel):
+    """Minimal parsed item delta: + for add, - for remove."""
+
+    item: str = Field(..., min_length=1, max_length=100)
+    count: float = Field(..., ge=0)
+    unit: str = Field(..., min_length=1, max_length=30)
+    op: Literal["+", "-"]

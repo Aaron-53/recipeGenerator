@@ -5,49 +5,42 @@ import landingImage from '../assets/landing.svg'
 const Landing = () => {
   return (
     <div className='overflow-x-hidden bg-[#5C6E43]'>
-      <section className='relative overflow-hidden'>
+      <section className='relative h-screen min-h-[100dvh] overflow-hidden'>
         <img
           src={landingImage}
           alt=""
-          className='min-h-screen min-w-full w-full h-full object-cover object-center -mt-2'
+          className='absolute inset-0 min-h-full min-w-full object-cover object-center'
           aria-hidden
         />
-        <div className='absolute inset-0 z-10 flex flex-col justify-center min-h-screen px-8 md:px-12 lg:px-24 -mt-[23rem] md:-mt-[30rem] lg:-mt-[53rem] max-w-xl'>
-          <h1
-            className='text-4xl sm:text-[100px] lg:text-[140px] font-bold text-[#5C6E43] mb-3'
-            style={{ fontFamily: "'Flavors', cursive" }}
-          >
-            Kitchenmate
-          </h1>
-          <p className='text-black text-sm sm:text-lg md:text-xl mb-6 sm:mb-18 max-w-md font-medium'>
-            Turn your ingredients into a meal
-          </p>
-          <div className='flex flex-col sm:flex-row flex-wrap gap-6'>
-            <Link
-              to='/signup'
-              className='sm:px-6 px-2 py-0.5 sm:py-2 rounded-full w-fit sm:text-base text-sm font-medium sm:font-semibold bg-[#5C6E43] text-[#F7E6C8] hover:bg-[#5C6E43]/80 transition-colors'
+        <div className='relative z-10 flex h-full items-center pl-8 sm:pl-12 md:pl-16 lg:pl-48 pr-6'>
+          <div className='max-w-md space-y-6 sm:max-w-md sm:space-y-8'>
+            <h1
+              className='text-4xl text-[#764441] drop-shadow-sm sm:text-5xl md:text-6xl'
+              style={{ fontFamily: '"Londrina Solid", sans-serif' }}
             >
-              Sign Up
-            </Link>
-            <Link
-              to='/signin'
-              className='sm:px-6 px-2 py-0.5 sm:py-2 rounded-full w-fit sm:text-base text-sm font-medium sm:font-semibold bg-[#5C6E43] text-[#F7E6C8] hover:bg-[#5C6E43]/80 transition-colors'
-            >
-              Login
-            </Link>
+              Kitchen Mate
+            </h1>
+            <p className='text-sm leading-relaxed text-[#764441] sm:text-base px-2'>
+              Not sure what to cook with what you have at home? We can help you find recipes using
+              the ingredients in your kitchen. Just add what you have, and we&apos;ll suggest
+              recipes you can make.
+            </p>
+            <div className='flex flex-wrap items-center gap-8 pt-1 justify-center'>
+              <Link
+                to='/signup'
+                className='inline-flex items-center justify-center rounded-full bg-[#764441] px-10 py-2 text-center text-sm font-semibold text-[#F7E7C4] shadow-sm transition-opacity hover:brightness-115'
+              >
+                SIGN UP
+              </Link>
+              <Link
+                to='/signin'
+                className='inline-flex items-center justify-center rounded-full px-10 py-2 text-center text-sm font-semibold text-[#F7E7C4] bg-[#764441] transition-colors hover:brightness-115'
+              >
+                SIGN IN
+              </Link>
+            </div>
           </div>
         </div>
-      </section>
-
-      <section className=' text-[#F5F0E8] px-8 md:px-12 lg:px-16 -mt-[20rem] mb-12 flex items-center justify-center'>
-        <p className='max-w-2xl text-left text-base md:text-lg leading-relaxed'>
-          Not sure what to cook with what you have at home? We can help you find
-          recipes using the ingredients in your kitchen. Just add what you have,
-          and we'll suggest recipes you can make. You'll also see which
-          ingredients you already have and what you might be missing. It's a
-          simple way to get meal ideas and make the most of what's in your
-          kitchen.
-        </p>
       </section>
     </div>
   )

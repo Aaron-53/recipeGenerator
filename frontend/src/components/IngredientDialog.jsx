@@ -1,46 +1,38 @@
 import React, { useState, useEffect } from 'react'
 import { FiX } from 'react-icons/fi'
-import UnitDropdown from './UnitDropdown'
+import UnitDropdown, { unitForApi } from './UnitDropdown'
 
 const defaultValues = { ingredient: '', quantity: '', unit: '' }
 
-const IngredientDialog = ({
-  open,
-  onClose,
+function IngredientDialogPanel({
   title,
   submitLabel = 'Add',
   initialValues = defaultValues,
+  onClose,
   onSubmit,
   onDelete,
-}) => {
-  const [ingredient, setIngredient] = useState(initialValues.ingredient ?? '')
-  const [quantity, setQuantity] = useState(String(initialValues.quantity ?? ''))
-  const [unit, setUnit] = useState(initialValues.unit ?? '')
+}) {
+  const [ingredient, setIngredient] = useState(
+    () => initialValues.ingredient ?? ''
+  )
+  const [quantity, setQuantity] = useState(() =>
+    String(initialValues.quantity ?? '')
+  )
+  const [unit, setUnit] = useState(() => initialValues.unit ?? '')
 
   useEffect(() => {
-    if (open) {
-      setIngredient(initialValues.ingredient ?? '')
-      setQuantity(String(initialValues.quantity ?? ''))
-      setUnit(initialValues.unit ?? '')
-    }
-  }, [open, initialValues.ingredient, initialValues.quantity, initialValues.unit])
-
-  useEffect(() => {
-    if (!open) return
     const onEscape = (e) => {
       if (e.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', onEscape)
     return () => document.removeEventListener('keydown', onEscape)
-  }, [open, onClose])
+  }, [onClose])
 
   const handleSubmit = (e) => {
     e?.preventDefault()
-    onSubmit({ ingredient, quantity, unit })
+    onSubmit({ ingredient, quantity, unit: unitForApi(unit) })
     onClose()
   }
-
-  if (!open) return null
 
   return (
     <div
@@ -111,10 +103,10 @@ const IngredientDialog = ({
           <div className='flex gap-3 mt-2'>
             <button
               type='button'
-              onClick={onDelete ? () => { onDelete(); onClose(); } : onClose}
+              onClick={onDelete ? onDelete : onClose}
               className={`flex-1 py-1.5 rounded-xl font-medium transition-colors cursor-pointer ${
                 onDelete
-                  ? 'border border-red-300/80 text-red-700 hover:bg-red-100/50'
+                  ? 'border-2 !text-red-800 border-red-800 hover:bg-red-900/20'
                   : 'border border-[#f2cec2]/80 text-[#5C6E43] hover:text-[#475434]'
               }`}
             >
@@ -123,7 +115,7 @@ const IngredientDialog = ({
             <button
               type='submit'
               disabled={!ingredient.trim() || !quantity.trim() || !unit.trim()}
-              className='flex-1 py-1.5 rounded-xl bg-[#F6C7B7] text-black/80 font-semibold hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-90 disabled:cursor-not-allowed disabled:hover:opacity-90'
+              className='flex-1 py-1.5 rounded-xl bg-[#F6C7B7] text-black/80 font-semibold hover:bg-[#E69695] transition-opacity cursor-pointer disabled:opacity-90 disabled:cursor-not-allowed disabled:hover:opacity-90'
             >
               {submitLabel}
             </button>
@@ -131,6 +123,30 @@ const IngredientDialog = ({
         </form>
       </div>
     </div>
+  )
+}
+
+const IngredientDialog = ({
+  open,
+  onClose,
+  title,
+  submitLabel,
+  initialValues = defaultValues,
+  onSubmit,
+  onDelete,
+}) => {
+  if (!open) return null
+  const key = `${initialValues.ingredient ?? ''}-${initialValues.quantity ?? ''}-${initialValues.unit ?? ''}`
+  return (
+    <IngredientDialogPanel
+      key={key}
+      title={title}
+      submitLabel={submitLabel}
+      initialValues={initialValues}
+      onClose={onClose}
+      onSubmit={onSubmit}
+      onDelete={onDelete}
+    />
   )
 }
 

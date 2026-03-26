@@ -5,6 +5,7 @@ import { FaGoogle } from 'react-icons/fa'
 import loginImage from '../assets/login.svg'
 import { useAuth } from '../context/AuthContext'
 import Loader, { LoaderSpinner } from '../components/Loader'
+import ErrorBanner from '../components/ErrorBanner'
 
 const SignIn = () => {
   const [username, setUsername] = useState('')
@@ -51,11 +52,12 @@ const SignIn = () => {
           <p className='text-[#F2CEC2] text-2xl md:text-3xl mb-8'>
             Glad to see you again :)
           </p>
-          {error && (
-            <p className='mb-4 text-red-200 text-sm bg-red-900/40 px-4 py-2 rounded-lg'>
-              {error}
-            </p>
-          )}
+          <ErrorBanner
+            message={error}
+            onDismiss={() => setError('')}
+            variant="auth"
+            className="mb-4 px-4"
+          />
           <form className='flex flex-col gap-5' onSubmit={handleSubmit}>
             <div>
               <label htmlFor='username' className='block text-[#F2CEC2] text-base font-medium mb-2 ml-4'>

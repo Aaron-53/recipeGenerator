@@ -47,6 +47,7 @@ export const authAPI = {
 
 export const inventoryAPI = {
   createItem: (itemData) => api.post('/inventory/items', itemData),
+  parseQuickInput: (text) => api.post('/inventory/parse-input', { text }),
   getAllItems: () => api.get('/inventory/items'),
   getItemById: (itemId) => api.get(`/inventory/items/${itemId}`),
   updateItem: (itemId, itemData) =>
@@ -58,6 +59,31 @@ export const inventoryAPI = {
 export const healthAPI = {
   checkHealth: () => api.get('/health'),
   root: () => api.get('/'),
+}
+
+export const recipesAPI = {
+  list: ({ limit = 20, offset } = {}) =>
+    api.get('/recipes', {
+      params: {
+        limit,
+        ...(offset != null && offset !== '' ? { offset } : {}),
+      },
+    }),
+}
+
+export const chatAPI = {
+  sendMessage: (body) => api.post('/chat/message', body),
+  rateRecipe: (body) => api.post('/chat/rate', body),
+}
+
+export const chatSessionsAPI = {
+  list: () => api.get('/chat-sessions'),
+  get: (sessionId, requestConfig = {}) =>
+    api.get(`/chat-sessions/${sessionId}`, requestConfig),
+  create: (body = {}) => api.post('/chat-sessions', body),
+  save: (sessionId, body) => api.put(`/chat-sessions/${sessionId}`, body),
+  patch: (sessionId, body) => api.patch(`/chat-sessions/${sessionId}`, body),
+  delete: (sessionId) => api.delete(`/chat-sessions/${sessionId}`),
 }
 
 export default api

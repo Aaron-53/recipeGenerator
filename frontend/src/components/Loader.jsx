@@ -15,8 +15,13 @@ export function LoaderSpinner({ size = "md", className = "", color }) {
   );
 }
 
-export default function Loader({ fullscreen = false, className = "" }) {
-  const inner = <LoaderSpinner size="md" />;
+export default function Loader({
+  fullscreen = false,
+  className = "",
+  color,
+  size = "md",
+}) {
+  const inner = <LoaderSpinner size={size} color={color} />;
 
   if (fullscreen) {
     return (

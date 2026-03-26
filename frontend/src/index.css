@@ -1,54 +1,49 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+}
+
 :root {
   --primary-color: #5C6E43;
   background-color: var(--primary-color);
 }
 
-.inventory-rows-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: #F6C7B7 transparent;
-}
-.inventory-rows-scroll::-webkit-scrollbar {
-  width: 8px;
-}
-.inventory-rows-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-.inventory-rows-scroll::-webkit-scrollbar-thumb {
-  background: #F6C7B7;
-  border-radius: 4px;
-}
-.inventory-rows-scroll::-webkit-scrollbar-thumb:hover {
-  background: #e8b5a5;
-}
-.inventory-rows-scroll::-webkit-scrollbar-button {
-  display: none;
-  height: 0;
-  width: 0;
-}
-
+.inventory-rows-scroll,
 .chat-history-scroll,
 .chat-area-scroll {
   scrollbar-width: thin;
   scrollbar-color: #F6C7B7 transparent;
 }
+.inventory-rows-scroll::-webkit-scrollbar,
 .chat-history-scroll::-webkit-scrollbar,
 .chat-area-scroll::-webkit-scrollbar {
   width: 8px;
 }
+.inventory-rows-scroll::-webkit-scrollbar-track,
 .chat-history-scroll::-webkit-scrollbar-track,
 .chat-area-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
+.inventory-rows-scroll::-webkit-scrollbar-thumb,
 .chat-history-scroll::-webkit-scrollbar-thumb,
 .chat-area-scroll::-webkit-scrollbar-thumb {
   background: #F6C7B7;
   border-radius: 4px;
 }
+.inventory-rows-scroll::-webkit-scrollbar-thumb:hover,
 .chat-history-scroll::-webkit-scrollbar-thumb:hover,
 .chat-area-scroll::-webkit-scrollbar-thumb:hover {
   background: #e8b5a5;
 }
+.inventory-rows-scroll::-webkit-scrollbar-button,
 .chat-history-scroll::-webkit-scrollbar-button,
 .chat-area-scroll::-webkit-scrollbar-button {
   display: none;

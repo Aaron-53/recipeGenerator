@@ -5,6 +5,7 @@ import signupImage from '../assets/signup_bg.svg'
 import { FaGoogle } from 'react-icons/fa'
 import { useAuth } from '../context/AuthContext'
 import Loader, { LoaderSpinner } from '../components/Loader'
+import ErrorBanner from '../components/ErrorBanner'
 
 const SignUp = () => {
   const [username, setUsername] = useState('')
@@ -57,11 +58,12 @@ const SignUp = () => {
           <p className='text-[#F2CEC2] text-2xl md:text-3xl mb-12'>
             We are glad to see you :)
           </p>
-          {error && (
-            <p className='mb-4 text-red-200 text-sm bg-red-900/40 px-4 py-2 rounded-lg'>
-              {error}
-            </p>
-          )}
+          <ErrorBanner
+            message={error}
+            onDismiss={() => setError('')}
+            variant="auth"
+            className="mb-4 px-4"
+          />
           <form className='flex flex-col gap-5' onSubmit={handleSubmit}>
             <button
               type='button'
