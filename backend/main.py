@@ -12,6 +12,10 @@ from configs.database import connect_to_mongo, close_mongo_connection
 
 # Align cookie session with long JWTs (OAuth state); override via env if needed.
 _SESSION_MAX_AGE = int(os.getenv("SESSION_MAX_AGE_SECONDS", str(7 * 24 * 3600)))
+_SESSION_HTTPS_ONLY = os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true"
+_SESSION_SAME_SITE = os.getenv("SESSION_COOKIE_SAMESITE", "lax").lower()
+if _SESSION_SAME_SITE not in ("lax", "strict", "none"):
+    _SESSION_SAME_SITE = "lax"
 
 
 @asynccontextmanager
@@ -33,6 +37,8 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SECRET_KEY,
     max_age=_SESSION_MAX_AGE,
+    same_site=_SESSION_SAME_SITE,
+    https_only=_SESSION_HTTPS_ONLY,
 )
 
 # Configure CORS

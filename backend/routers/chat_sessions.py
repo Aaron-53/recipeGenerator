@@ -1,7 +1,3 @@
-"""
-Persist recipe chat threads per user in MongoDB (`chat_sessions` collection).
-"""
-
 from datetime import datetime
 from typing import List
 
@@ -16,12 +12,47 @@ from schemas.chat_session import (
     ChatSessionPatch,
     ChatSessionResponse,
     ChatSessionUpdate,
+    RankedSuggestionEntry,
 )
 from utils.auth_utils import get_current_user_from_token
 
 router = APIRouter(prefix="/chat-sessions", tags=["chat-sessions"])
 
 COLLECTION = "chat_sessions"
+
+
+def _message_from_raw(m: dict) -> ChatMessage:
+    if not isinstance(m, dict):
+        return ChatMessage()
+    rs_raw = m.get("ranked_suggestions") or []
+    ranked: list[RankedSuggestionEntry] = []
+    if isinstance(rs_raw, list):
+        for x in rs_raw:
+            if not isinstance(x, dict):
+                continue
+            ri = x.get("ingredients") or []
+            rs = x.get("steps") or []
+            ing_list = [str(z) for z in ri] if isinstance(ri, list) else []
+            step_list = [str(z) for z in rs] if isinstance(rs, list) else []
+            ranked.append(
+                RankedSuggestionEntry(
+                    title=str(x.get("title") or ""),
+                    recipe_id=str(x.get("recipe_id") or ""),
+                    point_id=str(x.get("point_id") or ""),
+                    ingredients=ing_list[:48],
+                    steps=step_list[:48],
+                    tips=str(x.get("tips") or ""),
+                )
+            )
+    return ChatMessage(
+        id=str(m.get("id") or ""),
+        role=m.get("role", "user"),
+        content=m.get("content", ""),
+        msg_type=m.get("msg_type"),
+        recipe_id=m.get("recipe_id"),
+        point_id=m.get("point_id"),
+        ranked_suggestions=ranked,
+    )
 
 
 def _oid(s: str) -> ObjectId:
@@ -35,8 +66,6 @@ def _oid(s: str) -> ObjectId:
 
 
 def _sort_sessions_for_list(docs: list) -> list:
-    """Pinned first, then by updated_at descending."""
-
     def key(doc):
         pinned = bool(doc.get("pinned", False))
         ua = doc.get("updated_at")
@@ -48,7 +77,6 @@ def _sort_sessions_for_list(docs: list) -> list:
 
 @router.get("", response_model=List[ChatSessionListItem])
 async def list_sessions(current_user: dict = Depends(get_current_user_from_token)):
-    """List chat sessions for the current user: pinned first, then newest."""
     coll = await get_collection(COLLECTION)
     user_id = current_user["user_id"]
     cursor = coll.find({"user_id": user_id}).limit(100)
@@ -77,23 +105,16 @@ async def get_session(
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     msgs = doc.get("messages") or []
-    normalized = []
-    for m in msgs:
-        if isinstance(m, dict):
-            normalized.append(
-                {
-                    "id": m.get("id") or "",
-                    "role": m.get("role", "user"),
-                    "content": m.get("content", ""),
-                }
-            )
+    normalized = [_message_from_raw(m) for m in msgs if isinstance(m, dict)]
+    meta = doc.get("meta") if isinstance(doc.get("meta"), dict) else {}
     return ChatSessionResponse(
         id=str(doc["_id"]),
         title=doc.get("title") or "Chat",
-        messages=[ChatMessage(**m) for m in normalized],
+        messages=normalized,
         updated_at=doc["updated_at"],
         created_at=doc["created_at"],
         pinned=bool(doc.get("pinned", False)),
+        meta=meta,
     )
 
 
@@ -109,6 +130,7 @@ async def create_session(
         "title": body.title.strip() or "New chat",
         "messages": [],
         "pinned": False,
+        "meta": {},
         "created_at": now,
         "updated_at": now,
     }
@@ -121,6 +143,7 @@ async def create_session(
         updated_at=doc["updated_at"],
         created_at=doc["created_at"],
         pinned=False,
+        meta={},
     )
 
 
@@ -130,7 +153,6 @@ async def update_session(
     body: ChatSessionUpdate,
     current_user: dict = Depends(get_current_user_from_token),
 ):
-    """Replace messages and/or title (full save from client)."""
     coll = await get_collection(COLLECTION)
     oid = _oid(session_id)
     user_id = current_user["user_id"]
@@ -145,42 +167,20 @@ async def update_session(
         t = body.title.strip()
         if t:
             update_doc["title"] = t
-    messages = [m.model_dump() for m in body.messages]
+    messages = [m.model_dump(exclude_none=True) for m in body.messages]
     update_doc["messages"] = messages
+    if body.meta is not None:
+        update_doc["meta"] = body.meta
 
     await coll.update_one({"_id": oid, "user_id": user_id}, {"$set": update_doc})
     doc = await coll.find_one({"_id": oid})
-    raw = doc.get("messages") or []
-    msgs = [
-        ChatMessage(
-            id=str(m.get("id") or ""),
-            role=m.get("role", "user"),
-            content=m.get("content", ""),
-        )
-        for m in raw
-        if isinstance(m, dict)
-    ]
-    return ChatSessionResponse(
-        id=str(doc["_id"]),
-        title=doc.get("title") or "Chat",
-        messages=msgs,
-        updated_at=doc["updated_at"],
-        created_at=doc["created_at"],
-        pinned=bool(doc.get("pinned", False)),
-    )
+    return _doc_to_response(doc)
 
 
 def _doc_to_response(doc: dict) -> ChatSessionResponse:
     raw = doc.get("messages") or []
-    msgs = [
-        ChatMessage(
-            id=str(m.get("id") or ""),
-            role=m.get("role", "user"),
-            content=m.get("content", ""),
-        )
-        for m in raw
-        if isinstance(m, dict)
-    ]
+    msgs = [_message_from_raw(m) for m in raw if isinstance(m, dict)]
+    meta = doc.get("meta") if isinstance(doc.get("meta"), dict) else {}
     return ChatSessionResponse(
         id=str(doc["_id"]),
         title=doc.get("title") or "Chat",
@@ -188,6 +188,7 @@ def _doc_to_response(doc: dict) -> ChatSessionResponse:
         updated_at=doc["updated_at"],
         created_at=doc["created_at"],
         pinned=bool(doc.get("pinned", False)),
+        meta=meta,
     )
 
 
@@ -197,7 +198,6 @@ async def patch_session(
     body: ChatSessionPatch,
     current_user: dict = Depends(get_current_user_from_token),
 ):
-    """Rename and/or toggle pin without replacing messages."""
     coll = await get_collection(COLLECTION)
     oid = _oid(session_id)
     user_id = current_user["user_id"]

@@ -23,9 +23,9 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1008
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
-GOOGLE_REDIRECT_URI = os.getenv(
-    "GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback"
-)
+# If empty, /auth/google/login builds redirect_uri from the incoming request (host/port).
+# Set explicitly when behind a reverse proxy so the public HTTPS URL is used, or to pin one URI in Google Cloud Console.
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "").strip()
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 # Qdrant Configuration

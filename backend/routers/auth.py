@@ -151,6 +151,12 @@ async def verify_token_endpoint(
 # Google OAuth Endpoints
 
 
+def _google_oauth_redirect_uri(request: Request) -> str:
+    """Callback URL matching this request’s host/port so the session cookie matches Google’s redirect."""
+    base = str(request.base_url).rstrip("/")
+    return f"{base}/auth/google/callback"
+
+
 @router.get("/google/login")
 async def google_login(request: Request):
     """Initiate Google OAuth flow"""
@@ -160,7 +166,7 @@ async def google_login(request: Request):
             detail="Google OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
         )
 
-    redirect_uri = settings.GOOGLE_REDIRECT_URI
+    redirect_uri = settings.GOOGLE_REDIRECT_URI or _google_oauth_redirect_uri(request)
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 

@@ -74,6 +74,8 @@ export const recipesAPI = {
 export const chatAPI = {
   sendMessage: (body) => api.post('/chat/message', body),
   rateRecipe: (body) => api.post('/chat/rate', body),
+  postFeedback: (body) => api.post('/chat/feedback', body),
+  postMetrics: (body) => api.post('/chat/metrics', body),
 }
 
 export const chatSessionsAPI = {

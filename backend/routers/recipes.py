@@ -30,16 +30,14 @@ def _serialize_offset(offset: Any) -> Optional[str]:
 
 
 def initialize_recipe_retrieval() -> None:
-    """Warm up retrieval dependencies during server startup."""
     warmup_retrieval()
 
 
 @router.get("", response_model=PaginatedRecipesResponse)
 async def list_recipes(
     limit: int = Query(10, ge=1, le=200),
-    offset: Optional[str] = Query(None, description="Cursor from previous response"),
+    offset: Optional[str] = Query(None),
 ):
-    """List recipes from Qdrant with cursor pagination."""
     try:
         client = get_qdrant_client()
         points, next_offset = client.scroll(
@@ -67,7 +65,6 @@ async def list_recipes(
 
 @router.post("/retrieve", response_model=RecipeRetrieveResponse)
 async def retrieve_recipes(body: RecipeRetrieveRequest):
-    """Retrieve recipes using prompt-description and inventory-ingredients matching."""
     try:
         ranked = retrieve_ranked_recipes(
             body.prompt, body.inventory, top_k=body.top_k, fetch_k=body.fetch_k

@@ -78,33 +78,47 @@ def embed(text: str) -> list[float]:
     return vector.tolist()
 
 
-# ── Save rating ───────────────────────────────────────────────────────────────
+def _stable_rating_point_id(user_id: str, recipe_point_id: str) -> str:
+    key = f"recipe-rating:{user_id}:{str(recipe_point_id).strip()}"
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, key))
+
 
 def save_rating(
     recipe_text: str,
     rating: int,
     review: str,
     user_id: str,
+    point_id: str | None = None,
 ):
     """
     Embed the recipe text and store it in recipe_ratings with metadata.
     """
     vector = embed(recipe_text)
 
+    rid = (
+        _stable_rating_point_id(user_id, point_id)
+        if point_id and str(point_id).strip()
+        else str(uuid.uuid4())
+    )
+
     point = PointStruct(
-        id=str(uuid.uuid4()),
+        id=rid,
         vector=vector,
         payload={
             "recipe_text": recipe_text[:500],
             "rating": rating,
             "review": review,
             "user_id": user_id,
+            **(
+                {"recipe_point_id": str(point_id).strip()}
+                if point_id and str(point_id).strip()
+                else {}
+            ),
         },
     )
 
     client.upsert(collection_name=COLLECTION_NAME, points=[point])
-    print(f"[Qdrant] Saved rating {rating}/5 for user {user_id}")
-
+    print(f"[Qdrant] Saved rating {rating}/5 for user {user_id} point_id={point_id!r}")
 
 # ── Fetch relevant ratings ────────────────────────────────────────────────────
 
