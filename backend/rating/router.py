@@ -68,6 +68,9 @@ class MessageRequest(BaseModel):
     message: str
     history: list[dict] = Field(default_factory=list)
     inventory: list[str] = Field(default_factory=list)
+    # Client sends which ranked option is active (pickRef); history.point_id can lag as #1.
+    selected_point_id: Optional[str] = None
+    selected_recipe_id: Optional[str] = None
 
 
 class MessageResponse(BaseModel):
@@ -137,27 +140,99 @@ def _database_anchor_block(point_id: str, payload: dict) -> str:
     preview = ", ".join(ing[:16]) if ing else "(ingredients in database)"
     return (
         "\n\n=== DATABASE ANCHOR (mandatory) ===\n"
-        f"Selected library point_id={point_id!r}; canonical title={name!r}.\n"
+        f"Selected recipe point_id={point_id!r}; canonical title={name!r}.\n"
         f"Ingredient preview: {preview}\n"
         "Any recipe JSON you output for this thread must describe THIS dish — not the first "
         "row of a new search_recipe_database result unless that row is this same point_id.\n"
     )
 
 
-async def _selection_system_suffix(prior: list[dict]) -> str:
-    got = _last_ranked_selection_from_prior(prior)
-    if not got:
-        return ""
-    pid, title = got
+def _user_wants_fresh_search(message: str) -> bool:
+    """User explicitly wants new options / a different meal — allow search_recipe_database again."""
+    t = (message or "").lower()
+    phrases = (
+        "different dish",
+        "different recipe",
+        "something else",
+        "something different",
+        "another recipe",
+        "other recipe",
+        "other dishes",
+        "other options",
+        "new search",
+        "new ideas",
+        "three new",
+        "more options",
+        "show me other",
+        "pick again",
+        "choose again",
+        "start over",
+        "not this",
+        "dont want this",
+        "don't want this",
+        "another cuisine",
+        "completely different",
+    )
+    return any(p in t for p in phrases)
+
+
+def _title_for_point_in_prior(prior: list[dict], pid: str) -> str:
+    for m in reversed(prior or []):
+        if m.get("role") != "assistant":
+            continue
+        sug = m.get("ranked_suggestions")
+        if not isinstance(sug, list):
+            continue
+        for s in sug:
+            if (
+                isinstance(s, dict)
+                and str(s.get("point_id") or "").strip() == pid
+            ):
+                return str(s.get("title") or "").strip()
+    return ""
+
+
+async def _selection_system_suffix(
+    prior: list[dict],
+    selected_point_id: Optional[str] = None,
+    selected_recipe_id: Optional[str] = None,
+) -> str:
+    """Prefer explicit client selection so we never anchor to ranked option #1 by mistake."""
+    _ = selected_recipe_id  # optional; anchor uses point_id + payload
+    explicit = (selected_point_id or "").strip()
+    if explicit:
+        pid = explicit
+        title = _title_for_point_in_prior(prior, pid)
+    else:
+        got = _last_ranked_selection_from_prior(prior)
+        if not got:
+            return ""
+        pid, title = got
+
+    pay = await asyncio.to_thread(get_payload_by_point_id, pid)
+    if pay and not title:
+        title = str(pay.get("title") or "").strip()
+    if not title:
+        title = "(untitled)"
+
     out = (
         "\n\n=== USER SELECTION (from client) ===\n"
-        f"The user selected this database recipe from your previous suggestions: "
+        f"The user chose **this** database recipe (not necessarily the first ranked row): "
         f"point_id={pid!r}, title={title!r}.\n"
-        "Their latest message refers to THIS recipe only. Adapt or substitute ingredients "
-        "for that dish; do not switch to a different suggested option unless they ask.\n"
-        "Your JSON recipe_name must match that dish (or a clear variant of it).\n"
+        "Their latest message (e.g. allergy, swap, or tweak) applies to **THIS dish only**. "
+        "Do **not** adapt or rename a different option from the ranked list (e.g. do not jump to row #1).\n"
+        "Your JSON **recipe_name** and ingredients/steps must describe **this** title / dish family, "
+        "adapted as requested — never copy another option’s dish name.\n"
+        "\n"
+        "=== SELECTED DISH — FOLLOW-UPS (mandatory) ===\n"
+        "The user **already picked** this option in the app. They are not browsing the list anymore.\n"
+        "- If they say they **don’t have**, **ran out of**, **no X**, **substitute**, **swap**, **allergy**, "
+        "**less spicy**, scale, timing, or any **tweak to this same dish**: respond with **one** JSON recipe "
+        "(adapted). **Do not** call `search_recipe_database`. **Do not** write “1. … 2. … 3. …”, "
+        "“updated options”, “here are three…”, or “Select your choice” — that was for the **first** search only.\n"
+        "- **Only** if they clearly ask for **other** recipes, **new** ideas, or a **different** meal "
+        "(e.g. “show me different dishes”, “something else entirely”) may you run a **new** database search.\n"
     )
-    pay = await asyncio.to_thread(get_payload_by_point_id, pid)
     if pay:
         out += _database_anchor_block(pid, pay)
     return out
@@ -212,10 +287,16 @@ async def send_message(
     if wrapup_turn:
         sc = system_message.get("content") or ""
         system_message = {**system_message, "content": sc + WRAPUP_SESSION_SYSTEM_SUFFIX}
-    sel_suffix = await _selection_system_suffix(prior)
+    sel_suffix = await _selection_system_suffix(
+        prior,
+        selected_point_id=body.selected_point_id,
+        selected_recipe_id=body.selected_recipe_id,
+    )
     if sel_suffix:
         sc = system_message.get("content") or ""
         system_message = {**system_message, "content": sc + sel_suffix}
+    # After a tap selection, block DB search unless they explicitly want new options (prevents “1.2.3. pick again”).
+    lock_search_for_selection_anchor = bool(sel_suffix) and not _user_wants_fresh_search(msg)
     full_history = prior + [{"role": "user", "content": msg}]
     reply, saved, trigger, items = await asyncio.to_thread(
         call_ollama,
@@ -225,6 +306,7 @@ async def send_message(
         run_recipe_search=run_recipe_search,
         default_search_query=default_search_query,
         wrapup_after_recipe=wrapup_turn,
+        lock_search_for_selection_anchor=lock_search_for_selection_anchor,
     )
     trigger = supplement_rating_trigger_if_wrapup(msg, prior, trigger)
     if wrapup_turn:

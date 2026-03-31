@@ -66,6 +66,22 @@ function sortListingById(items) {
   )
 }
 
+/** One row per display title — Qdrant can hold multiple points with the same recipe name. */
+function dedupeListingByTitle(items) {
+  const seen = new Set()
+  const out = []
+  for (const row of items) {
+    const p = row.payload || {}
+    const title = payloadField(p, 'title', 'recipe_name', 'name')
+    const raw = String(title || '').trim()
+    const key = raw ? raw.toLowerCase() : `__id:${row.id}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(row)
+  }
+  return out
+}
+
 const Home = () => {
   const [rawItems, setRawItems] = useState([])
   const [imageManifest, setImageManifest] = useState(undefined)
@@ -100,9 +116,10 @@ const Home = () => {
 
   const visibleItems = useMemo(() => {
     if (imageManifest === undefined) return []
-    return sortListingById(
-      rawItems.filter((row) => rowPassesHomeFilters(row, imageManifest))
+    const filtered = rawItems.filter((row) =>
+      rowPassesHomeFilters(row, imageManifest)
     )
+    return dedupeListingByTitle(sortListingById(filtered))
   }, [rawItems, imageManifest])
 
   const pageLoading = recipesLoading || imageManifest === undefined

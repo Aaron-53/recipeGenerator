@@ -170,6 +170,26 @@ function assistantMessageForApi(m, pickRef) {
   return row
 }
 
+/** Last ranked-card selection for this thread — sent explicitly so the server does not infer option #1. */
+function getLastExplicitSelection(messages, pickRef) {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i]
+    if (m.role !== 'assistant') continue
+    const rs = m.ranked_suggestions
+    if (!Array.isArray(rs) || rs.length === 0) continue
+    const o = m.id != null ? pickRef.current.get(m.id) : null
+    const pid = o?.point_id ?? m.point_id
+    if (pid != null && String(pid).trim()) {
+      const rid = o?.recipe_id ?? m.recipe_id ?? pid
+      return {
+        selected_point_id: String(pid),
+        selected_recipe_id: String(rid),
+      }
+    }
+  }
+  return {}
+}
+
 const Chat = () => {
   const location = useLocation()
   const navigate = useNavigate()
@@ -556,6 +576,7 @@ const Chat = () => {
           message: trimmed,
           history: historyForApi,
           inventory,
+          ...getLastExplicitSelection(messages, pickRef),
         })
 
         console.log('[Chat] sendMessage response', {

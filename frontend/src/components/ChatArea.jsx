@@ -198,10 +198,7 @@ function BotRatingRow({ disabled, onThumbClick, thumbChosen, barError }) {
   const btnChosenDown =
     'rounded-md p-1 text-[#E69695] transition-colors focus:outline-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-[#E69695]/15'
 
-  const statusText =
-    thumbChosen == null
-      ? 'Tap a thumb to rate with stars (1–5).'
-      : 'Tap to clear; both thumbs will reappear so you can rate again.'
+  const statusText ='How was the recipe?'
 
   const showBoth = thumbChosen == null
 

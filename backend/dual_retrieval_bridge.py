@@ -28,6 +28,29 @@ def _dedupe_key(it: RecipeRetrieveItem) -> str:
     return f"pid:{it.id}"
 
 
+def _normalized_title_dedupe_key(it: RecipeRetrieveItem) -> str:
+    """Same user-visible title → one option (different point_ids may share a name)."""
+    pay = it.payload or {}
+    t = (it.title or pay.get("title") or "").strip().lower()
+    if not t:
+        return f"pid:{it.id}"
+    return f"title:{t}"
+
+
+def _dedupe_by_normalized_title(
+    items: list[RecipeRetrieveItem],
+) -> list[RecipeRetrieveItem]:
+    seen: set[str] = set()
+    out: list[RecipeRetrieveItem] = []
+    for it in items:
+        k = _normalized_title_dedupe_key(it)
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(it)
+    return out
+
+
 def _make_pref_fn(prefs: dict | None):
     base = prefs if prefs is not None else empty_preferences()
 
@@ -57,6 +80,7 @@ def _dedupe_preserve_score_order(items: list[RecipeRetrieveItem]) -> list[Recipe
 
 def _relevance_trim(items: list[RecipeRetrieveItem], limit: int) -> list[RecipeRetrieveItem]:
     deduped = _dedupe_preserve_score_order(items)
+    deduped = _dedupe_by_normalized_title(deduped)
     if not deduped:
         return []
     best_desc = float(deduped[0].desc_score)
